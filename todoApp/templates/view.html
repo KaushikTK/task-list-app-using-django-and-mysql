@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <title>TaskList App using django</title>
+</head>
+<body>
+    {% csrf_token %}
+    <div class="container">
+        <div class="row vh-100">
+            <div class="col-md-10 my-auto mx-auto bg-light shadow rounded">
+                <h1 class="display-4 text-center">TODO LIST</h1>
+                <div class="form form-inline col mx-auto py-2">
+                    <input class="form-control col-10 mx-auto" type='text' id='task' placeholder='Enter the task..'>
+                    <span>
+                        <button class="btn btn-sm my-auto shadow btn-primary float-right" onclick="addTask()">Add</button>
+                    </span>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Tasks</th>
+                        </tr>
+                    </thead>
+                    <tbody id='taskList'>
+                        {% if tasks%}
+                            {% for key,value in tasks.items %}
+                                <tr>
+                                    <td class="row border-0">
+                                        <div class="col-10" style="overflow-wrap: break-word;">{{ value }}</div>
+                                        <div class="col-2 my-auto">
+                                            <button class="btn btn-sm btn-danger shadow float-right" id='{{key}}' onclick="removeTask(this.id)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        
+                        {% else %}
+                        <tr>
+                            <td class="row border-0">
+                                <div class="col-12 text-center" style="overflow-wrap: break-word;">No tasks available!</div>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+
+    const addTask = async() => {
+        const task = document.getElementById('task')
+        if(!task) return;
+        try {
+            const response = await $.ajax({
+                type:'POST',
+                url:'create',
+                headers:{'X-CSRFToken':document.getElementsByName('csrfmiddlewaretoken')[0].value},
+                data:{'task':task.value}
+            })
+
+        task.value = ''
+
+        if(response === 'added') getTaskList()
+
+            else if(response === 'failed'){
+                alert('Failed, please try again!')
+                return
+            }
+
+        } catch (error) {
+            console.log(error)
+            alert('error')
+        }
+    }
+
+    // this function updates the tasklist in the UI if any task is deleted or created
+    const getTaskList = async() => {
+        let response = await $.ajax({type:'get', url:'getAllTasks'})
+        $('#taskList').empty() // empty the current task list
+        $('#taskList').append(response) // update the task list
+    }
+
+    const removeTask = async(id) => {
+        if(!id) return;
+        try {
+            const response = await $.ajax({
+            type:'POST',
+            url:'remove',
+            headers:{'X-CSRFToken':document.getElementsByName('csrfmiddlewaretoken')[0].value},
+            data:{'ID':id}
+            })
+        if(response === 'removed') getTaskList()
+        else if(response === 'failed'){
+            alert('Error, please try again..')
+            return;
+        }
+        } catch (error) {
+            console.log(error)
+            alert('Error, please try again..')
+        }
+    }
+
+</script>
+
+</html>
